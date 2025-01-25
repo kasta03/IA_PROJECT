@@ -174,3 +174,49 @@ class ConvNet(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 ```
+- Klasa `ConvNet` dziedziczy po `nn.Module`, co oznacza, że jest to sieć neuronowa w PyTorch.
+- Składa się z:
+  - Dwóch warstw konwolucyjnych (`conv1`, `conv2`) z filtrami 3x3.
+  - Normalizacji BatchNorm (`batch_norm1`, `batch_norm2`) po każdej konwolucji w celu stabilizacji i przyspieszenia treningu.
+  - Warstw Dropout (`dropout1`, `dropout2`), które pomagają uniknąć przeuczenia (overfittingu).
+  - Warstw w pełni połączonych (ang. fully connected, `fc1` i `fc2`).
+- Ostatnia warstwa ma 27 neuronów wyjściowych (w EMNIST Letters bywa 26 lub 27 klas w zależności od konfiguracji; tutaj przyjęto 27).
+- W metodzie `forward` wykonujemy operacje aktywacji ReLU, pooling (max_pool2d), flattenowanie i na końcu `log_softmax`, który jest często używany w PyTorch do zadań klasyfikacji.
+
+** Funkcja `train_model` **
+## Funkcja `train_model`
+```python
+def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, log_dir="logs"):
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+    writer = SummaryWriter(log_dir=log_dir)
+    model.to(device)
+
+    for epoch in range(epochs):
+        model.train()
+        total_loss = 0.0
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(device), target.to(device)
+
+            optimizer.zero_grad()
+            output = model(data)
+            loss = F.nll_loss(output, target)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+            if batch_idx % 100 == 0:
+                print(f'Epoch: {epoch}, Batch: {batch_idx}, Loss: {loss.item():.6f}')
+
+        scheduler.step()
+        val_acc = evaluate_model(model, val_loader, device)
+        avg_loss = total_loss / len(train_loader)
+        print(f'Epoch: {epoch} | Avg Train Loss: {avg_loss:.4f} | Val Accuracy: {val_acc:.4f}')
+
+        # Log metrics to TensorBoard
+        writer.add_scalar('Loss/train', avg_loss, epoch)
+        writer.add_scalar('Accuracy/val', val_acc, epoch)
+
+    writer.close()
+    return model
+```
