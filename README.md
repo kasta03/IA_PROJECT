@@ -89,7 +89,7 @@ pip install torch torchvision pillow tensorboard
 ---
 ### Instrukcja uruchomienia
 
-**Instalacja zależności**
+#### Instalacja zależności
 1. Upewnij się, że masz zainstalowanego Pythona w wersji co najmniej 3.7.
 2. (Opcjonalnie) Aktywuj wirtualne środowisko (venv), aby zainstalować zależności lokalnie.
 3. Zainstaluj wymagane biblioteki:
@@ -183,7 +183,7 @@ class ConvNet(nn.Module):
 - Ostatnia warstwa ma 27 neuronów wyjściowych (w EMNIST Letters bywa 26 lub 27 klas w zależności od konfiguracji; tutaj przyjęto 27).
 - W metodzie `forward` wykonujemy operacje aktywacji ReLU, pooling (max_pool2d), flattenowanie i na końcu `log_softmax`, który jest często używany w PyTorch do zadań klasyfikacji.
 
-** Funkcja `train_model` **
+**Funkcja `train_model`**
 ## Funkcja `train_model`
 ```python
 def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, log_dir="logs"):
