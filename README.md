@@ -456,7 +456,7 @@ def main():
 - Inicjalizuje ModernDrawingApp(root, model).
 - Uruchamia pętlę główną Tkinter (root.mainloop()).
 
-#### Możliwe rozszerzenia
+### Możliwe rozszerzenia
 - **Obsługa większej liczby znaków**: Można spróbować rozpoznawać cyfry, znaki specjalne lub całe słowa.
 - **Inny zbiór danych**: Możesz wytrenować model na innym zestawie znaków lub obrazów.
 - **Usprawniony interfejs**: Dodać np. opcje zapisywania obrazów, rysowania różnych kolorów, automatyczne czyszczenie po rozpoznaniu itp.
