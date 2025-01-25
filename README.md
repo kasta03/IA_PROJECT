@@ -99,7 +99,7 @@ pip install torch torchvision pillow tensorboard
 4. Upewnij się, że możesz importować wszystkie potrzebne pakiety w Pythonie (sprawdzisz, wpisując `python` i w interpretatorze `import torch`, itp.).
 
 
-**Szkolenie modelu (`train.py`)**
+#### Szkolenie modelu (`train.py`)
 1. Jeśli **nie posiadasz** pliku `letter_model.pth` (czyli model nie jest jeszcze wytrenowany), uruchom w terminalu:
 
     ```bash
