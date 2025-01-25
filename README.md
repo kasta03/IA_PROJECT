@@ -183,8 +183,7 @@ class ConvNet(nn.Module):
 - Ostatnia warstwa ma 27 neuronów wyjściowych (w EMNIST Letters bywa 26 lub 27 klas w zależności od konfiguracji; tutaj przyjęto 27).
 - W metodzie `forward` wykonujemy operacje aktywacji ReLU, pooling (max_pool2d), flattenowanie i na końcu `log_softmax`, który jest często używany w PyTorch do zadań klasyfikacji.
 
-**Funkcja `train_model`**
-## Funkcja `train_model`
+##### Funkcja `train_model`
 ```python
 def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, log_dir="logs"):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -220,3 +219,248 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, l
     writer.close()
     return model
 ```
+
+- Przyjmuje model, DataLoadery (treningowe i walidacyjne), liczbę epok, LR (learning rate) i ścieżkę do logów.
+- Używa optymalizatora `AdamW` i scheduler’a uczenia `StepLR`, który zmniejsza LR co pewną liczbę epok.
+- Dla każdej epoki pętla przechodzi przez `train_loader`:
+  - Odczytuje batch, przenosi go na `device` (CPU lub GPU).
+  - Oblicza wyjście sieci, liczy funkcję straty `F.nll_loss`.
+  - Wykonuje kroki backprop (optim.zero_grad -> loss.backward -> optim.step).
+- Po zakończeniu każdej epoki – sprawdza dokładność na zbiorze walidacyjnym (`val_loader` przez `evaluate_model`) i loguje wyniki do TensorBoard.
+
+##### Funkcja `evaluate_model`
+```python
+def evaluate_model(model, loader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data, target in loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            pred = output.argmax(dim=1)
+            correct += pred.eq(target).sum().item()
+            total += target.size(0)
+    return correct / total
+```
+- Wyłącza grad (`model.eval()` i `with torch.no_grad()`).
+- Przelicza dla każdego batcha, ile przewidywań jest trafnych (poprzez `output.argmax(dim=1).eq(target).sum()`).
+- Zwraca dokładność (liczbę poprawnych / liczbę wszystkich próbek).
+
+##### Funkcje zapisu/odczytu modelu (`save_checkpoint` i `load_checkpoint`)
+```python
+def save_checkpoint(model, optimizer, epoch, path='letter_model.pth'):
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch
+    }
+    torch.save(checkpoint, path)
+    print(f"Model checkpoint saved to {path}")
+```
+- Zapisuje do słownika `checkpoint`:
+  - Stan modelu (`model_state_dict`)
+  - Stan optymalizatora (`optimizer_state_dict`)
+  - Numer epoki
+- Następnie wywołuje `torch.save(checkpoint, path)`.
+
+```python
+def load_checkpoint(model, optimizer, path='letter_model.pth'):
+    if os.path.exists(path):
+        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        print("Model loaded from file, starting from epoch:", start_epoch)
+        return model, optimizer, start_epoch
+    else:
+        print(f"No checkpoint found at {path}. Starting training from scratch.")
+        return model, optimizer, 0
+```
+- Wczytuje `checkpoint = torch.load(path, map_location=torch.device('cpu'))`.
+- Ustawia wagi modelu i stany optymalizatora.
+- Zwraca zaktualizowany model, optimizer i epokę, od której można dalej trenować.
+
+##### Funkcja `load_model_for_inference`
+```python
+def load_model_for_inference(path='letter_model.pth'):
+    model = ConvNet()
+    if os.path.exists(path):
+        checkpoint = torch.load(path, map_location=torch.device('cpu'))
+        if 'model_state_dict' in checkpoint:
+            model.load_state_dict(checkpoint['model_state_dict'])
+            print("Model weights loaded for inference.")
+        else:
+            raise RuntimeError("The checkpoint does not contain 'model_state_dict'. Make sure you provided the correct file.")
+    else:
+        print("No pre-trained model found. Please train the model first.")
+    model.eval()
+    return model
+```
+- To uproszczona wersja wczytywania modelu tylko do inferencji (pomija stany optymalizatora).
+- Wczytuje wagi i ustawia tryb `model.eval()`, co wyłącza dropout itp.
+
+##### Funkcja `get_data_loaders`
+```python
+def get_data_loaders(batch_size=128, augment=True):
+    transform_list = []
+    if augment:
+        transform_list += [
+            transforms.RandomRotation(10),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1))
+        ]
+    transform_list += [
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ]
+
+    transform = transforms.Compose(transform_list)
+
+    train_dataset = EMNIST('./data', split='letters', train=True, download=True, transform=transform)
+
+    dataset_size = len(train_dataset)
+    val_size = int(0.1 * dataset_size)
+    train_size = dataset_size - val_size
+    train_data, val_data = random_split(train_dataset, [train_size, val_size])
+
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+
+    return train_loader, val_loader
+```
+
+- Definiuje listę transformacji obrazów, m.in. `RandomRotation(10)`, `RandomAffine`.
+- Wczytuje zbiór EMNIST w trybie `train=True` (split 'letters').
+- Dzieli go na zbiór treningowy i walidacyjny w proporcjach 90% / 10%.
+- Tworzy `DataLoader` dla każdej części (z `batch_size` i shuffle).
+- Zwraca `(train_loader, val_loader)`.
+
+##### Funkcja `main()` w `train.py`
+```python
+def main():
+    parser = argparse.ArgumentParser(description="Train or evaluate the ConvNet model.")
+    parser.add_argument('--epochs', type=int, default=10, help="Number of epochs for training.")
+    parser.add_argument('--batch_size', type=int, default=128, help="Batch size for DataLoader.")
+    parser.add_argument('--lr', type=float, default=0.0005, help="Learning rate.")
+    parser.add_argument('--log_dir', type=str, default=f"logs/{datetime.now().strftime('%Y%m%d_%H%M%S')}", help="Directory for TensorBoard logs.")
+    args = parser.parse_args()
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+
+    need_training = not os.path.exists('letter_model.pth')
+
+    model = ConvNet()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+
+    if need_training:
+        train_loader, val_loader = get_data_loaders(batch_size=args.batch_size)
+        trained_model = train_model(model, train_loader, val_loader, device, epochs=args.epochs, lr=args.lr, log_dir=args.log_dir)
+        save_checkpoint(trained_model, optimizer, args.epochs - 1)
+    else:
+        model, optimizer, start_epoch = load_checkpoint(model, optimizer)
+```
+
+- Używa `argparse` do wczytania argumentów wiersza poleceń (epoki, batch_size, LR).
+- Sprawdza, czy istnieje l`etter_model.pth`. Jeśli nie, trenuje nowy model. Jeśli tak, wczytuje poprzedni stan.
+- Domyślnie logi zapisuje do `logs/` z bieżącą datą i czasem (np.` logs/20250125_122000`).
+
+#### Plik `main.py` – aplikacja okienkowa (GUI)
+##### Klasa `ModernDrawingApp`
+```python
+class ModernDrawingApp:
+    def __init__(self, root, model):
+        self.canvas = None
+        self.root = root
+        self.root.title("Letter Recognition App")
+        self.root.geometry("500x600")
+        self.root.configure(bg="#2B2B2B")  # Dark modern background
+
+        self.model = model
+        self.canvas_width = 280
+        self.canvas_height = 280
+        self.brush_size = 20
+
+        self.idx_to_letter = {i: chr(i + 96) for i in range(1, 27)}
+
+        self.create_widgets()
+    ...
+```
+
+- Przyjmuje `root` – główne okno Tkinter i `model` – sieć neuronową wczytaną do inferencji.
+- W `__init__` definiuje parametry rysowania, wymiary płótna, domyślny rozmiar pędzla `brush_size=20`.
+- Tworzy słownik `idx_to_letter` mapujący indeksy (1..26) na litery `'a'..'z'`.
+
+##### Struktura okna i elementów interfejsu
+- **Nagłówek** (`ttk.Label` z tekstem "Letter Recognition").
+- **Canvas** (`tk.Canvas`) o wymiarach 280x280, czarne tło. Tutaj użytkownik rysuje myszką.
+- **Przyciski**:
+  - "Clear" – czyści płótno (`clear_canvas()`),
+  - "Recognize" – uruchamia proces rozpoznania (`recognize()`).
+- **Suwak** (`ttk.Scale`) – pozwala ustawić grubość pędzla (1..40).
+- **Etykieta wynikowa** (`result_label`) – wyświetla opis lub wyniki klasyfikacji.
+
+##### Proces rozpoznawania liter (`recognize`)
+```python
+def recognize(self):
+    img = self.get_canvas_image()
+    img = img.rotate(90, expand=True)
+
+    transform = transforms.Compose([
+        transforms.Resize((28, 28)),
+        transforms.Grayscale(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
+
+    image = transform(img).unsqueeze(0)
+
+    self.model.eval()
+    with torch.no_grad():
+        output = self.model(image)
+        probs = torch.softmax(output, dim=1)
+        top3_prob, top3_idx = torch.topk(probs, 3, dim=1)
+
+        results_text = "Most likely predictions:\n"
+        for i in range(3):
+            class_idx = top3_idx[0, i].item()
+            prob_value = top3_prob[0, i].item()
+            letter = self.idx_to_letter.get(class_idx, '?').upper()
+            results_text += f"{i + 1}) {letter} (p={prob_value:.2f})\n"
+
+        self.result_label.config(text=results_text)
+```
+
+1. Pobiera zawartość canvasu jako obraz PIL w metodzie `get_canvas_image()`:
+   - Tworzy nowy obraz PIL w trybie `RGB` z tłem czarnym (280x280).
+   - Rysuje białe linie na podstawie kształtów z canvasu (ich współrzędnych).
+   - Odwraca obraz w poziomie (`Image.Transpose.FLIP_LEFT_RIGHT`) i następnie obraca o 90° (`img = img.rotate(90, expand=True)`), by dostosować orientację do modelu EMNIST.
+2. Stosuje transformacje PyTorch:
+   - `Resize((28, 28))`
+   - `Grayscale()`
+   - `ToTensor()`
+   - `Normalize((0.1307,), (0.3081,))`
+3. Dokonuje predykcji przez sieć neuronową w trybie `eval()`.
+4. Oblicza `torch.softmax` i pobiera trzy najwyższe przewidywania (`torch.topk`).
+5. Mapuje indeks na literę i wyświetla wyniki w polu tekstowym aplikacji.
+
+##### Funkcja `main()` w `main.py`
+```python
+def main():
+    model = load_model_for_inference('letter_model.pth')
+    root = tk.Tk()
+    app = ModernDrawingApp(root, model)
+    root.mainloop()
+```
+- Ładuje model przez load_model_for_inference('letter_model.pth').
+- Tworzy główne okno (tk.Tk()).
+- Inicjalizuje ModernDrawingApp(root, model).
+- Uruchamia pętlę główną Tkinter (root.mainloop()).
+
+#### Możliwe rozszerzenia
+- **Obsługa większej liczby znaków**: Można spróbować rozpoznawać cyfry, znaki specjalne lub całe słowa.
+- **Inny zbiór danych**: Możesz wytrenować model na innym zestawie znaków lub obrazów.
+- **Usprawniony interfejs**: Dodać np. opcje zapisywania obrazów, rysowania różnych kolorów, automatyczne czyszczenie po rozpoznaniu itp.
+- **Więcej warstw CNN**: Rozbudować sieć, dodać kolejne warstwy i eksperymentować z hyperparametrami.
+- **Wizualizacje uczenia**: Użycie TensorBoard do szczegółowej analizy krzywych strat i dokładności w czasie rzeczywistym.
+- **Użycie GPU**: Jeśli posiadasz kompatybilną kartę i zainstalowane CUDA, możesz przyspieszyć trening (`train.py`).
