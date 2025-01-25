@@ -99,4 +99,21 @@ pip install torch torchvision pillow tensorboard
 4. Upewnij się, że możesz importować wszystkie potrzebne pakiety w Pythonie (sprawdzisz, wpisując `python` i w interpretatorze `import torch`, itp.).
 
 **Szkolenie modelu (`train.py`)**
+1. Jeśli **nie posiadasz** pliku `letter_model.pth` (czyli model nie jest jeszcze wytrenowany), uruchom w terminalu:
+
+```bash
+python train.py
+```
+  - Skrypt automatycznie pobierze zbiór danych EMNIST (split `letters`) do folderu `data/`.
+  - Rozpocznie się proces trenowania modelu sieci neuronowej – może to trochę potrwać (zależnie od CPU/GPU).
+  - Po zakończeniu treningu powstanie plik `letter_model.pth`.
+
+2. (Opcjonalnie) Możesz dostosować hiperparametry przez argumenty w wierszu poleceń, np.:
+```bash
+python train.py --epochs 15 --batch_size 64 --lr 0.001
+```
+
+- `--epochs`: liczba epok treningu.
+- `--batch_size`: rozmiar paczki danych.
+- `--lr`: współczynnik uczenia (learning rate).
 
