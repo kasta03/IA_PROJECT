@@ -80,25 +80,25 @@ pip install -r requirements.txt
 lub zainstalować ręcznie:
 ```bash
 pip install torch torchvision pillow tensorboard
-
 ```
 
 **Uwaga**: Jeśli posiadasz kartę graficzną NVIDIA i sterowniki CUDA, PyTorch może korzystać z GPU w celu przyspieszenia treningu. W przeciwnym razie wszystko zadziała na CPU (będzie to jedynie dłuższe).
 
 ---
-### Instrukcja uruchomienia
+## Instrukcja uruchomienia
 
-#### Instalacja zależności
+### Instalacja zależności
 1. Upewnij się, że masz zainstalowanego Pythona w wersji co najmniej 3.7.
 2. (Opcjonalnie) Aktywuj wirtualne środowisko (venv), aby zainstalować zależności lokalnie.
 3. Zainstaluj wymagane biblioteki:
+
 ```bash
 pip install torch torchvision pillow tensorboard
 ```
 4. Upewnij się, że możesz importować wszystkie potrzebne pakiety w Pythonie (sprawdzisz, wpisując `python` i w interpretatorze `import torch`, itp.).
 
 
-#### Szkolenie modelu (`train.py`)
+### Szkolenie modelu (`train.py`)
 1. Jeśli **nie posiadasz** pliku `letter_model.pth` (czyli model nie jest jeszcze wytrenowany), uruchom w terminalu:
 
     ```bash
@@ -119,7 +119,7 @@ pip install torch torchvision pillow tensorboard
 
 3. Jeśli **masz** już plik `letter_model.pth`, to skrypt `train.py` automatycznie załaduje stare wagi i domyślnie sprawdzi, czy chcesz kontynuować trening. W kodzie sprawdzane jest, czy plik istnieje. Jeśli tak – ładuje się model, jeżeli nie – następuje trenowanie od zera.
 
-#### Uruchomienie aplikacji graficznej (`main.py`)
+### Uruchomienie aplikacji graficznej (`main.py`)
 
 1. Po zakończeniu treningu (i posiadaniu pliku letter_model.pth) uruchom:
     ```bash
@@ -140,6 +140,7 @@ pip install torch torchvision pillow tensorboard
    - Kliknij "Recognize".
    - W okienku "Most likely predictions:" pojawią się trzy najbardziej prawdopodobne litery wraz z wartościami `p = ...` (oznaczającymi pewność predykcji).
 
+---
 ## Analiza kodu i zasady działania
 Poniżej znajduje się bardziej szczegółowy opis najważniejszych elementów kodu.
 ### Plik `train.py` – trening i zapisywanie modelu
@@ -456,6 +457,7 @@ def main():
 - Inicjalizuje ModernDrawingApp(root, model).
 - Uruchamia pętlę główną Tkinter (root.mainloop()).
 
+---
 ## Możliwe rozszerzenia
 - **Obsługa większej liczby znaków**: Można spróbować rozpoznawać cyfry, znaki specjalne lub całe słowa.
 - **Inny zbiór danych**: Możesz wytrenować model na innym zestawie znaków lub obrazów.
