@@ -85,3 +85,18 @@ pip install torch torchvision pillow tensorboard
 ```
 
 **Uwaga**: Jeśli posiadasz kartę graficzną NVIDIA i sterowniki CUDA, PyTorch może korzystać z GPU w celu przyspieszenia treningu. W przeciwnym razie wszystko zadziała na CPU (będzie to jedynie dłuższe).
+
+---
+### Instrukcja uruchomienia
+
+**Instalacja zależności**
+1. Upewnij się, że masz zainstalowanego Pythona w wersji co najmniej 3.7.
+2. (Opcjonalnie) Aktywuj wirtualne środowisko (venv), aby zainstalować zależności lokalnie.
+3. Zainstaluj wymagane biblioteki:
+```bash
+pip install torch torchvision pillow tensorboard
+```
+4. Upewnij się, że możesz importować wszystkie potrzebne pakiety w Pythonie (sprawdzisz, wpisując `python` i w interpretatorze `import torch`, itp.).
+
+**Szkolenie modelu (`train.py`)**
+
