@@ -120,7 +120,7 @@ pip install torch torchvision pillow tensorboard
 
 3. Jeśli **masz** już plik `letter_model.pth`, to skrypt `train.py` automatycznie załaduje stare wagi i domyślnie sprawdzi, czy chcesz kontynuować trening. W kodzie sprawdzane jest, czy plik istnieje. Jeśli tak – ładuje się model, jeżeli nie – następuje trenowanie od zera.
 
-**Uruchomienie aplikacji graficznej (`main.py`)**
+#### Uruchomienie aplikacji graficznej (`main.py`)
 
 1. Po zakończeniu treningu (i posiadaniu pliku letter_model.pth) uruchom:
     ```bash
@@ -143,8 +143,8 @@ pip install torch torchvision pillow tensorboard
 
 ### Analiza kodu i zasady działania
 Poniżej znajduje się bardziej szczegółowy opis najważniejszych elementów kodu.
-**Plik `train.py` – trening i zapisywanie modelu**
-**Model ConvNet**
+#### Plik `train.py` – trening i zapisywanie modelu
+##### Model ConvNet
 ```python
 class ConvNet(nn.Module):
     def __init__(self):
