@@ -84,3 +84,4 @@ pip install torch torchvision pillow tensorboard
 
 ```
 
+**Uwaga**: Jeśli posiadasz kartę graficzną NVIDIA i sterowniki CUDA, PyTorch może korzystać z GPU w celu przyspieszenia treningu. W przeciwnym razie wszystko zadziała na CPU (będzie to jedynie dłuższe).
