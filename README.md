@@ -98,22 +98,79 @@ pip install torch torchvision pillow tensorboard
 ```
 4. Upewnij się, że możesz importować wszystkie potrzebne pakiety w Pythonie (sprawdzisz, wpisując `python` i w interpretatorze `import torch`, itp.).
 
+
 **Szkolenie modelu (`train.py`)**
 1. Jeśli **nie posiadasz** pliku `letter_model.pth` (czyli model nie jest jeszcze wytrenowany), uruchom w terminalu:
 
-```bash
-python train.py
-```
-  - Skrypt automatycznie pobierze zbiór danych EMNIST (split `letters`) do folderu `data/`.
-  - Rozpocznie się proces trenowania modelu sieci neuronowej – może to trochę potrwać (zależnie od CPU/GPU).
-  - Po zakończeniu treningu powstanie plik `letter_model.pth`.
+    ```bash
+    python train.py
+    ```
+   - Skrypt automatycznie pobierze zbiór danych EMNIST (split `letters`) do folderu `data/`.
+   - Rozpocznie się proces trenowania modelu sieci neuronowej – może to trochę potrwać (zależnie od CPU/GPU).
+   - Po zakończeniu treningu powstanie plik `letter_model.pth`.
 
 2. (Opcjonalnie) Możesz dostosować hiperparametry przez argumenty w wierszu poleceń, np.:
-```bash
-python train.py --epochs 15 --batch_size 64 --lr 0.001
+    ```bash
+    python train.py --epochs 15 --batch_size 64 --lr 0.001
+    ```
+
+   - `--epochs`: liczba epok treningu.
+   - `--batch_size`: rozmiar paczki danych.
+   - `--lr`: współczynnik uczenia (learning rate).
+
+3. Jeśli **masz** już plik `letter_model.pth`, to skrypt `train.py` automatycznie załaduje stare wagi i domyślnie sprawdzi, czy chcesz kontynuować trening. W kodzie sprawdzane jest, czy plik istnieje. Jeśli tak – ładuje się model, jeżeli nie – następuje trenowanie od zera.
+
+**Uruchomienie aplikacji graficznej (`main.py`)**
+
+1. Po zakończeniu treningu (i posiadaniu pliku letter_model.pth) uruchom:
+    ```bash
+     python main.py
+    ```
+2. Otworzy się okienko aplikacji Tkinter:
+
+    - Górny napis "Letter Recognition"
+    - Pole rysowania (czarne tło 280x280 pikseli)
+    - Przycisk "Clear" do czyszczenia płótna.
+    - Przycisk "Recognize" do rozpoznania.
+    - Suwak zmieniający grubość "pędzla".
+    - Pole, w którym wyświetlą się wyniki rozpoznawania (top 3 przewidywania).
+
+3. Sposób użycia:
+
+   - Narysuj na płótnie jakąś literę (możesz klikać i przeciągać myszką, tak jakbyś rysował farbą).
+   - Kliknij "Recognize".
+   - W okienku "Most likely predictions:" pojawią się trzy najbardziej prawdopodobne litery wraz z wartościami `p = ...` (oznaczającymi pewność predykcji).
+
+### Analiza kodu i zasady działania
+Poniżej znajduje się bardziej szczegółowy opis najważniejszych elementów kodu.
+**Plik `train.py` – trening i zapisywanie modelu**
+**Model ConvNet**
+```python
+class ConvNet(nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.batch_norm1 = nn.BatchNorm2d(32)
+        self.batch_norm2 = nn.BatchNorm2d(64)
+        self.dropout1 = nn.Dropout2d(0.25)
+        self.dropout2 = nn.Dropout2d(0.5)
+        self.fc1 = nn.Linear(9216, 256)
+        self.fc2 = nn.Linear(256, 27)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.batch_norm1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = self.batch_norm2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)
 ```
-
-- `--epochs`: liczba epok treningu.
-- `--batch_size`: rozmiar paczki danych.
-- `--lr`: współczynnik uczenia (learning rate).
-
