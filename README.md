@@ -24,7 +24,6 @@
      - [Proces rozpoznawania liter (`recognize`)](#proces-rozpoznawania-liter-recognize)
      - [Funkcja `main()` w `main.py`](#funkcja-main-w-mainpy)
 7. [Możliwe rozszerzenia](#możliwe-rozszerzenia)
-8. [Autorzy / Kontakt](#autorzy--kontakt)
 
 ---
 
