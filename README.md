@@ -140,10 +140,10 @@ pip install torch torchvision pillow tensorboard
    - Kliknij "Recognize".
    - W okienku "Most likely predictions:" pojawią się trzy najbardziej prawdopodobne litery wraz z wartościami `p = ...` (oznaczającymi pewność predykcji).
 
-### Analiza kodu i zasady działania
+## Analiza kodu i zasady działania
 Poniżej znajduje się bardziej szczegółowy opis najważniejszych elementów kodu.
-#### Plik `train.py` – trening i zapisywanie modelu
-##### Model ConvNet
+### Plik `train.py` – trening i zapisywanie modelu
+#### Model ConvNet
 ```python
 class ConvNet(nn.Module):
     def __init__(self):
@@ -182,7 +182,7 @@ class ConvNet(nn.Module):
 - Ostatnia warstwa ma 27 neuronów wyjściowych (w EMNIST Letters bywa 26 lub 27 klas w zależności od konfiguracji; tutaj przyjęto 27).
 - W metodzie `forward` wykonujemy operacje aktywacji ReLU, pooling (max_pool2d), flattenowanie i na końcu `log_softmax`, który jest często używany w PyTorch do zadań klasyfikacji.
 
-##### Funkcja `train_model`
+#### Funkcja `train_model`
 ```python
 def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, log_dir="logs"):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -227,7 +227,7 @@ def train_model(model, train_loader, val_loader, device, epochs=10, lr=0.0005, l
   - Wykonuje kroki backprop (optim.zero_grad -> loss.backward -> optim.step).
 - Po zakończeniu każdej epoki – sprawdza dokładność na zbiorze walidacyjnym (`val_loader` przez `evaluate_model`) i loguje wyniki do TensorBoard.
 
-##### Funkcja `evaluate_model`
+#### Funkcja `evaluate_model`
 ```python
 def evaluate_model(model, loader, device):
     model.eval()
@@ -246,7 +246,7 @@ def evaluate_model(model, loader, device):
 - Przelicza dla każdego batcha, ile przewidywań jest trafnych (poprzez `output.argmax(dim=1).eq(target).sum()`).
 - Zwraca dokładność (liczbę poprawnych / liczbę wszystkich próbek).
 
-##### Funkcje zapisu/odczytu modelu (`save_checkpoint` i `load_checkpoint`)
+#### Funkcje zapisu/odczytu modelu (`save_checkpoint` i `load_checkpoint`)
 ```python
 def save_checkpoint(model, optimizer, epoch, path='letter_model.pth'):
     checkpoint = {
@@ -280,7 +280,7 @@ def load_checkpoint(model, optimizer, path='letter_model.pth'):
 - Ustawia wagi modelu i stany optymalizatora.
 - Zwraca zaktualizowany model, optimizer i epokę, od której można dalej trenować.
 
-##### Funkcja `load_model_for_inference`
+#### Funkcja `load_model_for_inference`
 ```python
 def load_model_for_inference(path='letter_model.pth'):
     model = ConvNet()
@@ -299,7 +299,7 @@ def load_model_for_inference(path='letter_model.pth'):
 - To uproszczona wersja wczytywania modelu tylko do inferencji (pomija stany optymalizatora).
 - Wczytuje wagi i ustawia tryb `model.eval()`, co wyłącza dropout itp.
 
-##### Funkcja `get_data_loaders`
+#### Funkcja `get_data_loaders`
 ```python
 def get_data_loaders(batch_size=128, augment=True):
     transform_list = []
@@ -334,7 +334,7 @@ def get_data_loaders(batch_size=128, augment=True):
 - Tworzy `DataLoader` dla każdej części (z `batch_size` i shuffle).
 - Zwraca `(train_loader, val_loader)`.
 
-##### Funkcja `main()` w `train.py`
+#### Funkcja `main()` w `train.py`
 ```python
 def main():
     parser = argparse.ArgumentParser(description="Train or evaluate the ConvNet model.")
@@ -364,8 +364,8 @@ def main():
 - Sprawdza, czy istnieje l`etter_model.pth`. Jeśli nie, trenuje nowy model. Jeśli tak, wczytuje poprzedni stan.
 - Domyślnie logi zapisuje do `logs/` z bieżącą datą i czasem (np.` logs/20250125_122000`).
 
-#### Plik `main.py` – aplikacja okienkowa (GUI)
-##### Klasa `ModernDrawingApp`
+### Plik `main.py` – aplikacja okienkowa (GUI)
+#### Klasa `ModernDrawingApp`
 ```python
 class ModernDrawingApp:
     def __init__(self, root, model):
@@ -390,7 +390,7 @@ class ModernDrawingApp:
 - W `__init__` definiuje parametry rysowania, wymiary płótna, domyślny rozmiar pędzla `brush_size=20`.
 - Tworzy słownik `idx_to_letter` mapujący indeksy (1..26) na litery `'a'..'z'`.
 
-##### Struktura okna i elementów interfejsu
+#### Struktura okna i elementów interfejsu
 - **Nagłówek** (`ttk.Label` z tekstem "Letter Recognition").
 - **Canvas** (`tk.Canvas`) o wymiarach 280x280, czarne tło. Tutaj użytkownik rysuje myszką.
 - **Przyciski**:
@@ -399,7 +399,7 @@ class ModernDrawingApp:
 - **Suwak** (`ttk.Scale`) – pozwala ustawić grubość pędzla (1..40).
 - **Etykieta wynikowa** (`result_label`) – wyświetla opis lub wyniki klasyfikacji.
 
-##### Proces rozpoznawania liter (`recognize`)
+#### Proces rozpoznawania liter (`recognize`)
 ```python
 def recognize(self):
     img = self.get_canvas_image()
@@ -443,7 +443,7 @@ def recognize(self):
 4. Oblicza `torch.softmax` i pobiera trzy najwyższe przewidywania (`torch.topk`).
 5. Mapuje indeks na literę i wyświetla wyniki w polu tekstowym aplikacji.
 
-##### Funkcja `main()` w `main.py`
+#### Funkcja `main()` w `main.py`
 ```python
 def main():
     model = load_model_for_inference('letter_model.pth')
